@@ -13,20 +13,46 @@
 <body>
 
 <script type="text/javascript">
+// Game utils
+let cursors;
 let canvasWidth = 800;
 let canvasHeight = 600;
 
-var config = {
+// Game objects
+let player;
+let stars;
+let asteroids;
+let starSpawner;
+let asteroidSpawner;
+
+// States
+let gameOver = false;
+let gameRunning = false;
+
+// UI
+let scoreText;
+let asteroidDebug;
+
+// Score
+let score = 0;
+
+// Game config
+let asteroidSpawnRate = 500;
+
+let config = {
     type: Phaser.AUTO,
     width: canvasWidth,
     height: canvasHeight,
     physics: {
         default: 'arcade',
         arcade: {
-            debug: true,
+            debug: false,
             debugShowBody: true,
             debugBodyColor: 0x00ff00,
         }
+    },
+    audio: {
+        disableWebAudio: true
     },
     scene: {
         preload: preload,
@@ -34,21 +60,6 @@ var config = {
         update: update
     }
 };
-
-
-let player;
-let stars;
-let asteroids;
-let cursors;
-let score = 0;
-let gameOver = false;
-let scoreText;
-let asteroidDebug;
-
-let starSpawner;
-let asteroidSpawner;
-
-let asteroidSpawnRate = 500;
 
 let game = new Phaser.Game(config);
 
