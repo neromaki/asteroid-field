@@ -65,27 +65,33 @@ let game = new Phaser.Game(config);
 
 function preload ()
 {
-    //this.load.image('star', 'assets/spr_star_0.png');
-    this.load.image('asteroid', 'assets/spr_asteroid_0.png');
-    this.load.image('star', 'assets/spr_star_0.png');
-    this.load.spritesheet('ship', 'assets/spr_ship.png', { frameWidth: 200, frameHeight: 100 });
-    this.load.spritesheet('shipExplode', 'assets/spr_ship_explosion.png', { frameWidth: 384, frameHeight: 192 });
+    // SPRITES
+    this.load.image('asteroid', 'assets/sprites/spr_asteroid_0.png');
+    this.load.image('star', 'assets/sprites/spr_star_0.png');
+    this.load.spritesheet('ship', 'assets/sprites/spr_ship.png', { frameWidth: 200, frameHeight: 100 });
+    this.load.spritesheet('shipExplode', 'assets/sprites/spr_ship_explosion.png', { frameWidth: 384, frameHeight: 192 });
+
+    // AUDIO
+    this.load.audio('menuMusic', 'assets/audio/snd_music_molten_alloy.mp3');
+    this.load.audio('gameMusic', 'assets/audio/snd_music_thrashing_around.mp3');
+    this.load.audio('shipEngine', 'assets/audio/snd_effect_engine.wav');
+    this.load.audio('shipExplosion', 'assets/audio/snd_effect_explosion.wav');
+    this.load.audio('bonus', 'assets/audio/snd_effect_bonus.wav');
 }
 
 function create ()
 {
+
     //  Input Events
     cursors = this.input.keyboard.createCursorKeys();
 
-    //  The score
-    scoreText = this.add.text(16, 16, 'score: 0', { fontSize: '32px', fill: '#fff' });
-    asteroidDebug = this.add.text(16, 60, 'spawnRate', { fontSize: '16px', fill: '#fff' });
+    //startGame(this);
+    menu(this);
+}
 
-    stars = this.physics.add.group();
-    asteroids = this.physics.add.group();
-
-    setupPlayer(this);
-    startGame(this);
+function menu (that)
+{
+    that.sound.add('menuMusic').play({loop: true});
 }
 
 function setupPlayer(that)
@@ -116,9 +122,20 @@ function setupPlayer(that)
 }
 
 function startGame(that)
-{   
+{
+    gameRunning = true;
+
+    //  The score
+    //scoreText = that.add.text(16, 16, 'score: 0', { fontSize: '32px', fill: '#fff' });
+    //asteroidDebug = that.add.text(16, 60, 'spawnRate', { fontSize: '16px', fill: '#fff' });
+
+    stars = that.physics.add.group();
+    asteroids = that.physics.add.group();
+
+    setupPlayer(that);
+
     starSpawner = that.time.addEvent({
-        delay: 350,
+        delay: 250,
         callback: spawnStars,
         callbackScope: that,
         loop: true
@@ -138,15 +155,15 @@ function startGame(that)
         loop: true
     });
 
-    scoreText.setText('Score: 0');
-    asteroidDebug.setText('spawnRate: ' + asteroidSpawner.delay);
+    //scoreText.setText('Score: 0');
+    //asteroidDebug.setText('spawnRate: ' + asteroidSpawner.delay);
 }
 
 function adjustAsteroidSpawnRate()
 {
     if (asteroidSpawner.delay > 100) {
         asteroidSpawner.delay = asteroidSpawner.delay - 75;
-        asteroidDebug.setText('spawnRate: ' + asteroidSpawner.delay);
+        //asteroidDebug.setText('spawnRate: ' + asteroidSpawner.delay);
     }
 }
 
@@ -159,7 +176,7 @@ function endGame()
         destroyAllObjects();
         gameOver = true;
         player.anims.play('shipExplode');
-        scoreText.setText('');
+        //scoreText.setText('');
     }
 }
 
@@ -170,30 +187,37 @@ let shipSpeed = 350;
 
 function update ()
 {
-    if (gameOver)
+    if (gameRunning) 
     {
-        return;
-    }
+        if (gameOver)
+        {
+            return;
+        }
 
-    score += 1;
-    scoreText.setText('Score: ' + score);
+        score += 1;
+        //scoreText.setText('Score: ' + score);
 
-    player.anims.play('shipDefault', true);
+        player.anims.play('shipDefault', true);
 
-    if (cursors.left.isDown)
-    {
-        player.setVelocityX(-shipSpeed);
-        player.angle = shipAngle - shipTurnAngle;
-    }
-    else if (cursors.right.isDown)
-    {
-        player.setVelocityX(shipSpeed);
-        player.angle = shipAngle + shipTurnAngle;
-    }
+        if (cursors.left.isDown)
+        {
+            player.setVelocityX(-shipSpeed);
+            player.angle = shipAngle - shipTurnAngle;
+        }
+        else if (cursors.right.isDown)
+        {
+            player.setVelocityX(shipSpeed);
+            player.angle = shipAngle + shipTurnAngle;
+        }
+        else
+        {
+            player.setVelocityX(0);
+            player.angle = shipAngle;
+        }
+    } 
     else
     {
-        player.setVelocityX(0);
-        player.angle = shipAngle;
+
     }
 }
 
@@ -222,12 +246,6 @@ function spawnAsteroids ()
     let velocityMax = 500;
     let rotationMin = 10;
     let rotationMax = 500;
-
-    // let asteroid = asteroids.create(Math.random() * (canvasWidth - 0) + 0, 0, 'asteroid');
-
-    // asteroid.scale = Math.random() * (scaleMax - scaleMin) + scaleMin;
-    // asteroid.setVelocityY(Math.random() * (velocityMax - velocityMin) + velocityMin);
-    // asteroid.setAngularVelocity(Math.random() * (rotationMax - rotationMin) + rotationMin);
 
     asteroids = this.physics.add.group({
         key: 'asteroid',
