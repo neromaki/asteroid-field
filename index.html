@@ -13,6 +13,7 @@
 <body>
 
 <script type="text/javascript">
+
 // Game utils
 let cursors;
 let canvasWidth = 800;
@@ -30,8 +31,8 @@ let gameOver = false;
 
 let titleGameName;
 let titleSubtext;
+let titleInstructions;
 let scoreText;
-let asteroidDebug;
 
 // Score
 let score = 0;
@@ -65,6 +66,9 @@ class TitleScene extends Phaser.Scene {
 
     create ()
     {
+        // Input Events
+        cursors = this.input.keyboard.createCursorKeys();
+
         // Create UI elements
         titleGameName = this.add.text(canvasWidth/2, 
                                         canvasHeight/3, 
@@ -75,17 +79,35 @@ class TitleScene extends Phaser.Scene {
                                         }).setOrigin(0.5);
 
         titleSubtext = this.add.text(canvasWidth/2, 
-                                        (canvasHeight/3)*2, 
-                                        'for One Giant Leap gamejam', 
+                                        (canvasHeight/3) + 50, 
+                                        'a game for One Giant Leap',
                                         { 
-                                            fontSize: '26px', 
+                                            fontSize: '16px', 
+                                            fill: '#fff'
+                                        }).setOrigin(0.5);
+
+
+
+        titleInstructions = this.add.text(canvasWidth/2, 
+                                        (canvasHeight/3) * 2, 
+                                        'press any button to start',
+                                        { 
+                                            fontSize: '24px', 
                                             fill: '#fff'
                                         }).setOrigin(0.5);
 
         titleGameName.depth = 10;
         titleSubtext.depth = 10;
+        titleInstructions.depth = 10;
 
         this.sound.add('titleMusic').play({loop: true});
+    }
+
+    update ()
+    {
+        if (cursors.left.isDown || cursors.right.isDown) {
+            this.scene.switch('GameScene');
+        }
     }
 }
 
@@ -116,9 +138,9 @@ class GameScene extends Phaser.Scene {
 
     create ()
     {
-        //  Input Events
+        // Input Events
         cursors = this.input.keyboard.createCursorKeys();
-
+        
         scoreText = this.add.text(16, 16, '', { fontSize: '32px', fill: '#fff' });
         scoreText.depth = 10;
 
@@ -328,8 +350,8 @@ let config = {
         disableWebAudio: true
     },
     scene: [
-        GameScene,
         TitleScene,
+        GameScene,
     ]
     //scene: {
         // preload: preload,
