@@ -27,9 +27,9 @@ let asteroidSpawner;
 
 // States
 let gameOver = false;
-let gameRunning = false;
 
-// UI
+let titleGameName;
+let titleSubtext;
 let scoreText;
 let asteroidDebug;
 
@@ -39,155 +39,177 @@ let score = 0;
 // Game config
 let asteroidSpawnRate = 500;
 
-let config = {
-    type: Phaser.AUTO,
-    width: canvasWidth,
-    height: canvasHeight,
-    physics: {
-        default: 'arcade',
-        arcade: {
-            debug: false,
-            debugShowBody: true,
-            debugBodyColor: 0x00ff00,
-        }
-    },
-    audio: {
-        disableWebAudio: true
-    },
-    scene: {
-        preload: preload,
-        create: create,
-        update: update
-    }
-};
-
-let game = new Phaser.Game(config);
-
-function preload ()
-{
-    // SPRITES
-    this.load.image('asteroid', 'assets/sprites/spr_asteroid_0.png');
-    this.load.image('star', 'assets/sprites/spr_star_0.png');
-    this.load.spritesheet('ship', 'assets/sprites/spr_ship.png', { frameWidth: 200, frameHeight: 100 });
-    this.load.spritesheet('shipExplode', 'assets/sprites/spr_ship_explosion.png', { frameWidth: 384, frameHeight: 192 });
-
-    // AUDIO
-    this.load.audio('menuMusic', 'assets/audio/snd_music_molten_alloy.mp3');
-    this.load.audio('gameMusic', 'assets/audio/snd_music_thrashing_around.mp3');
-    this.load.audio('shipEngine', 'assets/audio/snd_effect_engine.wav');
-    this.load.audio('shipExplosion', 'assets/audio/snd_effect_explosion.wav');
-    this.load.audio('bonus', 'assets/audio/snd_effect_bonus.wav');
-}
-
-function create ()
-{
-
-    //  Input Events
-    cursors = this.input.keyboard.createCursorKeys();
-
-    //startGame(this);
-    menu(this);
-}
-
-function menu (that)
-{
-    that.sound.add('menuMusic').play({loop: true});
-}
-
-function setupPlayer(that)
-{
-    // The player and its settings
-    player = that.physics.add.sprite(400, 500, 'ship');
-    player.angle = shipAngle;
-    player.scale = 0.75;
-    player.setSize(50, 130, true);
-    player.body.setOffset(75, -30);
-    player.allowGravity = false;
-    player.setCollideWorldBounds(true);
-
-    
-    that.anims.create({
-        key: 'shipDefault',
-        frames: that.anims.generateFrameNumbers('ship', { start: 0, end: 1 }),
-        frameRate: 10,
-        repeat: -1
-    });
-
-    that.anims.create({
-        key: 'shipExplode',
-        frames: that.anims.generateFrameNumbers('shipExplode', { start: 0, end: 16 }),
-        frameRate: 25,
-        hideOnComplete: true
-    });
-}
-
-function startGame(that)
-{
-    gameRunning = true;
-
-    //  The score
-    //scoreText = that.add.text(16, 16, 'score: 0', { fontSize: '32px', fill: '#fff' });
-    //asteroidDebug = that.add.text(16, 60, 'spawnRate', { fontSize: '16px', fill: '#fff' });
-
-    stars = that.physics.add.group();
-    asteroids = that.physics.add.group();
-
-    setupPlayer(that);
-
-    starSpawner = that.time.addEvent({
-        delay: 250,
-        callback: spawnStars,
-        callbackScope: that,
-        loop: true
-    });
-
-    asteroidSpawner = that.time.addEvent({
-        delay: asteroidSpawnRate,
-        callback: spawnAsteroids,
-        callbackScope: that,
-        loop: true
-    });
-
-    that.time.addEvent({
-        delay: 10000,
-        callback: adjustAsteroidSpawnRate,
-        callbackScope: that,
-        loop: true
-    });
-
-    //scoreText.setText('Score: 0');
-    //asteroidDebug.setText('spawnRate: ' + asteroidSpawner.delay);
-}
-
-function adjustAsteroidSpawnRate()
-{
-    if (asteroidSpawner.delay > 100) {
-        asteroidSpawner.delay = asteroidSpawner.delay - 75;
-        //asteroidDebug.setText('spawnRate: ' + asteroidSpawner.delay);
-    }
-}
-
-function endGame()
-{
-    if(!gameOver) {
-        console.log("hitAsteroid");
-        starSpawner.destroy();
-        asteroidSpawner.destroy();
-        destroyAllObjects();
-        gameOver = true;
-        player.anims.play('shipExplode');
-        //scoreText.setText('');
-    }
-}
-
-
 let shipAngle = 270;
 let shipTurnAngle = 25;
 let shipSpeed = 350;
 
-function update ()
-{
-    if (gameRunning) 
+
+class TitleScene extends Phaser.Scene {
+
+    constructor ()
+    {
+        super({
+            key: 'TitleScene'
+        })
+    }
+
+    preload ()
+    {
+        // SPRITES
+        this.load.image('asteroid', 'assets/sprites/spr_asteroid_0.png');
+        this.load.image('star', 'assets/sprites/spr_star_0.png');
+
+        // AUDIO
+        this.load.audio('titleMusic', 'assets/audio/snd_music_molten_alloy.mp3');
+    }
+
+    create ()
+    {
+        // Create UI elements
+        titleGameName = this.add.text(canvasWidth/2, 
+                                        canvasHeight/3, 
+                                        'Asteroid Field', 
+                                        { 
+                                            fontSize: '56px', 
+                                            fill: '#fff'
+                                        }).setOrigin(0.5);
+
+        titleSubtext = this.add.text(canvasWidth/2, 
+                                        (canvasHeight/3)*2, 
+                                        'for One Giant Leap gamejam', 
+                                        { 
+                                            fontSize: '26px', 
+                                            fill: '#fff'
+                                        }).setOrigin(0.5);
+
+        titleGameName.depth = 10;
+        titleSubtext.depth = 10;
+
+        this.sound.add('titleMusic').play({loop: true});
+    }
+}
+
+
+class GameScene extends Phaser.Scene {
+
+    constructor ()
+    {
+        super({
+            key: 'GameScene'
+        })
+    }
+
+    preload ()
+    {
+        // SPRITES
+        this.load.image('asteroid', 'assets/sprites/spr_asteroid_0.png');
+        this.load.image('star', 'assets/sprites/spr_star_0.png');
+        this.load.spritesheet('ship', 'assets/sprites/spr_ship.png', { frameWidth: 200, frameHeight: 100 });
+        this.load.spritesheet('shipExplode', 'assets/sprites/spr_ship_explosion.png', { frameWidth: 384, frameHeight: 192 });
+
+        // AUDIO
+        this.load.audio('gameMusic', 'assets/audio/snd_music_thrashing_around.mp3');
+        this.load.audio('shipEngine', 'assets/audio/snd_effect_engine.wav');
+        this.load.audio('shipExplosion', 'assets/audio/snd_effect_explosion.wav');
+        this.load.audio('bonus', 'assets/audio/snd_effect_bonus.wav');
+    }
+
+    create ()
+    {
+        //  Input Events
+        cursors = this.input.keyboard.createCursorKeys();
+
+        scoreText = this.add.text(16, 16, '', { fontSize: '32px', fill: '#fff' });
+        scoreText.depth = 10;
+
+        this.startGame(this);
+    }
+
+    setupPlayer(that)
+    {
+        // The player and its settings
+        player = that.physics.add.sprite(400, 500, 'ship');
+        player.angle = shipAngle;
+        player.scale = 0.75;
+        player.depth = 9;
+        player.setSize(50, 130, true);
+        player.body.setOffset(75, -30);
+        player.allowGravity = false;
+        player.setCollideWorldBounds(true);
+
+        
+        that.anims.create({
+            key: 'shipDefault',
+            frames: that.anims.generateFrameNumbers('ship', { start: 0, end: 1 }),
+            frameRate: 10,
+            repeat: -1
+        });
+
+        that.anims.create({
+            key: 'shipExplode',
+            frames: that.anims.generateFrameNumbers('shipExplode', { start: 0, end: 16 }),
+            frameRate: 25,
+            hideOnComplete: true
+        });
+    }
+
+
+    startGame(that)
+    {
+        //  The score
+        scoreText = that.add.text(16, 16, 'score: 0', { fontSize: '32px', fill: '#fff' });
+
+        stars = that.physics.add.group();
+        asteroids = that.physics.add.group();
+
+        this.setupPlayer(that);
+
+        starSpawner = that.time.addEvent({
+            delay: 250,
+            callback: this.spawnStars,
+            callbackScope: that,
+            loop: true
+        });
+
+        asteroidSpawner = that.time.addEvent({
+            delay: asteroidSpawnRate,
+            callback: this.spawnAsteroids,
+            callbackScope: that,
+            loop: true
+        });
+
+        that.time.addEvent({
+            delay: 10000,
+            callback: this.adjustAsteroidSpawnRate,
+            callbackScope: that,
+            loop: true
+        });
+
+        //scoreText.setText('Score: 0');
+        //asteroidDebug.setText('spawnRate: ' + asteroidSpawner.delay);
+    }
+
+    adjustAsteroidSpawnRate()
+    {
+        if (asteroidSpawner.delay > 100) {
+            asteroidSpawner.delay = asteroidSpawner.delay - 75;
+        }
+    }
+
+    endGame()
+    {
+        if(!gameOver) {
+            console.log("hitAsteroid");
+            starSpawner.destroy();
+            asteroidSpawner.destroy();
+            this.destroyAllObjects();
+            gameOver = true;
+            player.anims.play('shipExplode');
+            scoreText.setText('');
+        }
+    }
+
+    update ()
     {
         if (gameOver)
         {
@@ -195,7 +217,7 @@ function update ()
         }
 
         score += 1;
-        //scoreText.setText('Score: ' + score);
+        scoreText.setText('Score: ' + score);
 
         player.anims.play('shipDefault', true);
 
@@ -214,83 +236,109 @@ function update ()
             player.setVelocityX(0);
             player.angle = shipAngle;
         }
-    } 
-    else
-    {
+    }
 
+
+    spawnStars ()
+    {
+        stars = this.physics.add.group({
+            key: 'star',
+            setXY: { x: Math.random() * (canvasWidth - 0) + 0, y: 0 }
+        });
+
+        stars.children.iterate(function (star) {
+            star.angle = 270;
+            star.depth = 1;
+            star.setVelocityY(750);
+        });
+
+        this.destroyOffscreenObjects();
+    }
+
+
+    spawnAsteroids ()
+    {
+        let scaleMin = 0.5;
+        let scaleMax = 1;
+        let velocityMin = 200;
+        let velocityMax = 500;
+        let rotationMin = 10;
+        let rotationMax = 500;
+
+        asteroids = this.physics.add.group({
+            key: 'asteroid',
+            setXY: { x: Math.random() * (canvasWidth - 0) + 0, y: 0 }
+        });
+
+        asteroids.children.iterate(function (asteroid) {
+            asteroid.depth = 2;
+            asteroid.scale = Math.random() * (scaleMax - scaleMin) + scaleMin;
+            asteroid.setVelocityY(Math.random() * (velocityMax - velocityMin) + velocityMin);
+            asteroid.setAngularVelocity(Math.random() * (rotationMax - rotationMin) + rotationMin);
+        });
+
+        this.physics.add.collider(player, asteroids, this.hitAsteroid, null, this);
+    }
+
+    destroyOffscreenObjects ()
+    {
+        stars.children.iterate(function (star) {
+            if(star.y > canvasHeight) {
+                star.destroy();
+            }
+        });
+
+        asteroids.children.iterate(function (asteroid) {
+            if(asteroid.y > canvasHeight) {
+                asteroid.destroy();
+            }
+        });
+    }
+
+    destroyAllObjects ()
+    {
+        stars.children.iterate(function (star) {
+            star.destroy();
+        });
+
+        asteroids.children.iterate(function (asteroid) {
+            asteroid.destroy();
+        });
+    }
+
+    hitAsteroid (player, asteroid)
+    {
+        this.endGame();
     }
 }
 
-
-function spawnStars ()
-{
-    stars = this.physics.add.group({
-        key: 'star',
-        setXY: { x: Math.random() * (canvasWidth - 0) + 0, y: 0 }
-    });
-
-    stars.children.iterate(function (star) {
-        star.angle = 270;
-        star.setVelocityY(750);
-    });
-
-    destroyOffscreenObjects();
-}
-
-
-function spawnAsteroids ()
-{
-    let scaleMin = 0.5;
-    let scaleMax = 1;
-    let velocityMin = 200;
-    let velocityMax = 500;
-    let rotationMin = 10;
-    let rotationMax = 500;
-
-    asteroids = this.physics.add.group({
-        key: 'asteroid',
-        setXY: { x: Math.random() * (canvasWidth - 0) + 0, y: 0 }
-    });
-
-    asteroids.children.iterate(function (asteroid) {
-        asteroid.scale = Math.random() * (scaleMax - scaleMin) + scaleMin;
-        asteroid.setVelocityY(Math.random() * (velocityMax - velocityMin) + velocityMin);
-        asteroid.setAngularVelocity(Math.random() * (rotationMax - rotationMin) + rotationMin);
-    });
-
-    this.physics.add.collider(player, asteroids, hitAsteroid, null, this);
-}
-
-function destroyOffscreenObjects ()
-{
-    stars.children.iterate(function (star) {
-        if(star.y > canvasHeight) {
-            star.destroy();
+let config = {
+    type: Phaser.AUTO,
+    width: canvasWidth,
+    height: canvasHeight,
+    physics: {
+        default: 'arcade',
+        arcade: {
+            debug: false,
+            debugShowBody: true,
+            debugBodyColor: 0x00ff00,
         }
-    });
+    },
+    audio: {
+        disableWebAudio: true
+    },
+    scene: [
+        GameScene,
+        TitleScene,
+    ]
+    //scene: {
+        // preload: preload,
+        // create: create,
+        // update: update
+    //}
+};
 
-    asteroids.children.iterate(function (asteroid) {
-        if(asteroid.y > canvasHeight) {
-            asteroid.destroy();
-        }
-    });
-}
-
-function destroyAllObjects ()
-{
-    stars.children.iterate(function (star) {
-        star.destroy();
-    });
-
-    asteroids.children.iterate(function (asteroid) {
-        asteroid.destroy();
-    });
-}
-
-function hitAsteroid (player, asteroid)
-{
-    endGame();
-}
+let game = new Phaser.Game(config);
 
 </script>
 
