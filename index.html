@@ -20,19 +20,13 @@ let canvasWidth = 800;
 let canvasHeight = 600;
 
 // Game objects
-let player;
-let stars;
-let asteroids;
-let starSpawner;
-let asteroidSpawner;
+let player, stars, asteroids, starSpawner, asteroidSpawner;
 
 // States
 let gameOver = false;
 
-let titleGameName;
-let titleSubtext;
-let titleInstructions;
-let scoreText;
+// UI
+let titleGameName, titleSubtext, titleInstructions, scoreDisplay, scoreLabel, gameOverText, finalScore, finalScoreLabel, gameOverRestart;
 
 // Score
 let score = 0;
@@ -141,8 +135,50 @@ class GameScene extends Phaser.Scene {
         // Input Events
         cursors = this.input.keyboard.createCursorKeys();
         
-        scoreText = this.add.text(16, 16, '', { fontSize: '32px', fill: '#fff' });
-        scoreText.depth = 10;
+        scoreLabel = this.add.text(32, 22, 'Score:', { fontSize: '18px', fill: '#fff' });
+        scoreLabel.depth = 10;
+
+        scoreDisplay = this.add.text(110, 16, '', { fontSize: '32px', fill: '#fff', align: 'left' });
+
+        // Create UI elements
+        gameOverText = this.add.text(canvasWidth/2, 
+                                        (canvasHeight/3)-50, 
+                                        'GAME OVER', 
+                                        { 
+                                            fontSize: '56px', 
+                                            fill: '#fff'
+                                        }).setOrigin(0.5).setVisible(false);
+
+
+        finalScoreLabel = this.add.text(canvasWidth/2, 
+                                        (canvasHeight/3) + 50, 
+                                        'Your score:',
+                                        { 
+                                            fontSize: '16px', 
+                                            fill: '#fff'
+                                        }).setOrigin(0.5).setVisible(false);
+
+        finalScore = this.add.text(canvasWidth/2, 
+                                        (canvasHeight/3) + 100, 
+                                        '',
+                                        { 
+                                            fontSize: '42px', 
+                                            fill: '#fff'
+                                        }).setOrigin(0.5).setVisible(false);
+
+
+
+        gameOverRestart = this.add.text(canvasWidth/2, 
+                                        (canvasHeight/3) * 2, 
+                                        'Press any button to try again',
+                                        { 
+                                            fontSize: '24px', 
+                                            fill: '#fff'
+                                        }).setOrigin(0.5).setVisible(false);
+
+        titleGameName.depth = 10;
+        titleSubtext.depth = 10;
+        titleInstructions.depth = 10;
 
         this.startGame(this);
     }
@@ -178,9 +214,6 @@ class GameScene extends Phaser.Scene {
 
     startGame(that)
     {
-        //  The score
-        scoreText = that.add.text(16, 16, 'score: 0', { fontSize: '32px', fill: '#fff' });
-
         stars = that.physics.add.group();
         asteroids = that.physics.add.group();
 
@@ -207,8 +240,15 @@ class GameScene extends Phaser.Scene {
             loop: true
         });
 
-        //scoreText.setText('Score: 0');
-        //asteroidDebug.setText('spawnRate: ' + asteroidSpawner.delay);
+        score = 0;
+
+        scoreDisplay.setVisible(true);
+        scoreLabel.setVisible(true);
+
+        gameOverText.setVisible(false);
+        finalScore.setVisible(false);
+        finalScoreLabel.setVisible(false);
+        gameOverRestart.setVisible(false);
     }
 
     adjustAsteroidSpawnRate()
@@ -227,7 +267,16 @@ class GameScene extends Phaser.Scene {
             this.destroyAllObjects();
             gameOver = true;
             player.anims.play('shipExplode');
-            scoreText.setText('');
+
+            scoreDisplay, scoreLabel, gameOverText, finalScore, finalScoreLabel, gameOverRestart;
+
+            scoreDisplay.setVisible(false);
+            scoreLabel.setVisible(false);
+
+            gameOverText.setVisible(true);
+            finalScore.setVisible(true);
+            finalScoreLabel.setVisible(true);
+            gameOverRestart.setVisible(true);
         }
     }
 
@@ -235,11 +284,17 @@ class GameScene extends Phaser.Scene {
     {
         if (gameOver)
         {
-            return;
+            if (cursors.left.getDuration() > 0 && cursors.left.getDuration() < 100 
+            || cursors.right.getDuration() > 0 && cursors.right.getDuration() < 100 ) {
+                gameOver = false;
+                this.startGame(this);
+            }
+            return false;
         }
 
         score += 1;
-        scoreText.setText('Score: ' + score);
+        scoreDisplay.setText(score);
+        finalScore.setText(score);
 
         player.anims.play('shipDefault', true);
 
