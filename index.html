@@ -15,7 +15,7 @@
 <script type="text/javascript">
 /**
 *   TODO:
-*   Transitioning from GAME to TITLE prevents the TITLE scene from detecting input
+*   Transitioning from TITLE to GAME a second time causes startGame() to be called twice?!
 *   Spawned ASTEROIDS and STARS don't have a Y value??
 */
 
@@ -56,7 +56,9 @@ class TitleScene extends Phaser.Scene {
     {
         super({
             key: 'TitleScene'
-        })
+        });
+
+        this.music;
     }
 
     preload ()
@@ -72,7 +74,7 @@ class TitleScene extends Phaser.Scene {
     create ()
     {
         console.log("SCENE: Title");
-        this.input.keyboard.enabled = true;
+        //this.input.keyboard.enabled = true;
 
         if(resetTimer) {
             resetTimer.destroy();
@@ -112,14 +114,15 @@ class TitleScene extends Phaser.Scene {
         titleSubtext.depth = 10;
         titleInstructions.depth = 10;
 
-        this.sound.add('titleMusic').play({loop: true});
+        this.music = this.sound.add('titleMusic');
+        this.music.play({loop: true});
     }
 
     update ()
     {
         if (cursors.left.isDown || cursors.right.isDown) {
-            this.input.keyboard.enabled = false;
-            this.scene.switch('GameScene');
+            this.music.stop();
+            this.scene.start('GameScene');
         }
     }
 }
@@ -131,7 +134,9 @@ class GameScene extends Phaser.Scene {
     {
         super({
             key: 'GameScene'
-        })
+        });
+
+        this.music;
     }
 
     preload ()
@@ -159,7 +164,8 @@ class GameScene extends Phaser.Scene {
 
         // Input Events
         cursors = this.input.keyboard.createCursorKeys();
-        this.input.keyboard.enabled = true;
+        console.log(cursors);
+        //this.input.keyboard.enabled = true;
         
         scoreLabel = this.add.text(32, 22, 'Score:', { fontSize: '18px', fill: '#fff' });
         scoreLabel.depth = 10;
@@ -202,9 +208,7 @@ class GameScene extends Phaser.Scene {
                                             fill: '#fff'
                                         }).setOrigin(0.5).setVisible(false);
 
-        titleGameName.depth = 10;
-        titleSubtext.depth = 10;
-        titleInstructions.depth = 10;
+        this.music = this.sound.add('gameMusic');
 
         this.startGame(this);
     }
@@ -252,6 +256,11 @@ class GameScene extends Phaser.Scene {
         if(resetTimer) {
             resetTimer.destroy();
         }
+
+        cursors.left.reset();
+        cursors.right.reset();
+
+        this.music.play({loop: true});
         
         stars = that.physics.add.group();
         asteroids = that.physics.add.group();
@@ -296,74 +305,6 @@ class GameScene extends Phaser.Scene {
     }
 
 
-    /*
-    * Adjust the asteroid spawn rate by X each time, to a minimum of 100ms
-    */
-    adjustAsteroidSpawnRate()
-    {
-        if (asteroidSpawner.delay > 100) {
-            asteroidSpawner.delay = asteroidSpawner.delay - 75;
-        }
-    }
-
-
-    /*
-    * End the game and display the GAME OVER screen with final score
-    */
-    endGame(that)
-    {
-        if(!gameOver) {
-            console.log("GAME: endGame()");
-            gameOver = true;
-
-            // Explode the player
-            player.anims.play('shipExplode');
-            player.on('animationcomplete', function() {
-                player.destroy();
-            }, this);
-
-            // Stop spawning stars and asteroids
-            starSpawner.destroy();
-            asteroidSpawner.destroy();
-
-            // Remove all star and asteroid game objects
-            this.destroyAllObjects();
-
-            // Display the game over UI
-            scoreDisplay.setVisible(false);
-            scoreLabel.setVisible(false);
-
-            gameOverText.setVisible(true);
-            finalScore.setVisible(true);
-            finalScoreLabel.setVisible(true);
-            gameOverRestart.setVisible(true);
-
-            // Disable the input for X seconds to prevent immediate restart
-            cursors.left.enabled = false;
-            cursors.right.enabled = false;
-
-            that.time.addEvent({
-                delay: 1000,
-                callback: function() {
-                    cursors.left.enabled = true;
-                    cursors.right.enabled = true;
-                }
-            });
-
-            // Start the reset timer which - if reached - will return to the title screen
-            resetTimer = that.time.addEvent({
-                delay: idleTimeToReset,
-                callback: function() {
-                    console.log("GAME: Returning to title");
-                    this.input.keyboard.enabled = false;
-                    this.scene.switch('TitleScene');
-                },
-                callbackScope: that
-            });
-        }
-    }
-
-
     update ()
     {
         // If the game is over, test whether the player is pressing either L or R
@@ -373,6 +314,7 @@ class GameScene extends Phaser.Scene {
             if (cursors.left.getDuration() > 0 && cursors.left.getDuration() < 100 
             || cursors.right.getDuration() > 0 && cursors.right.getDuration() < 100 ) {
                 gameOver = false;
+                this.music.stop();
                 this.startGame(this);
             }
             return false;
@@ -456,6 +398,75 @@ class GameScene extends Phaser.Scene {
         });
 
         this.physics.add.collider(player, asteroids, this.hitAsteroid, null, this);
+    }
+
+
+    /*
+    * Adjust the asteroid spawn rate by X each time, to a minimum of 100ms
+    */
+    adjustAsteroidSpawnRate()
+    {
+        if (asteroidSpawner.delay > 100) {
+            asteroidSpawner.delay = asteroidSpawner.delay - 75;
+        }
+    }
+
+
+    /*
+    * End the game and display the GAME OVER screen with final score
+    */
+    endGame(that)
+    {
+        if(!gameOver) {
+            console.log("GAME: endGame()");
+            gameOver = true;
+
+            // Explode the player
+            player.anims.play('shipExplode');
+            player.on('animationcomplete', function() {
+                player.destroy();
+            }, this);
+            this.sound.play('shipExplosion');
+
+            // Stop spawning stars and asteroids
+            starSpawner.destroy();
+            asteroidSpawner.destroy();
+
+            // Remove all star and asteroid game objects
+            this.destroyAllObjects();
+
+            // Display the game over UI
+            scoreDisplay.setVisible(false);
+            scoreLabel.setVisible(false);
+
+            gameOverText.setVisible(true);
+            finalScore.setVisible(true);
+            finalScoreLabel.setVisible(true);
+            gameOverRestart.setVisible(true);
+
+            // Disable the input for X seconds to prevent immediate restart
+            cursors.left.enabled = false;
+            cursors.right.enabled = false;
+
+            that.time.addEvent({
+                delay: 1000,
+                callback: function() {
+                    cursors.left.enabled = true;
+                    cursors.right.enabled = true;
+                }
+            });
+
+            // Start the reset timer which - if reached - will return to the title screen
+            resetTimer = that.time.addEvent({
+                delay: idleTimeToReset,
+                callback: function() {
+                    console.log("GAME: Returning to title");
+                    this.music.stop();
+                    this.scene.start('TitleScene');
+                },
+                callbackScope: that
+            });
+        }
     }
 
 
