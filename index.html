@@ -311,8 +311,10 @@ class GameScene extends Phaser.Scene {
         // if so, start the game again
         if (gameOver)
         {
-            if (cursors.left.getDuration() > 0 && cursors.left.getDuration() < 100 
-            || cursors.right.getDuration() > 0 && cursors.right.getDuration() < 100 ) {
+            if (resetTimer.getElapsed() > 1000 &&
+            (cursors.left.getDuration() > 0 && cursors.left.getDuration() < 100
+            || cursors.right.getDuration() > 0 && cursors.right.getDuration() < 100 )) {
+                console.log("GAME: Restarting");
                 gameOver = false;
                 this.music.stop();
                 this.startGame(this);
@@ -421,6 +423,18 @@ class GameScene extends Phaser.Scene {
             console.log("GAME: endGame()");
             gameOver = true;
 
+            // Disable the input for X seconds to prevent immediate restart
+            cursors.left.enabled = false;
+            cursors.right.enabled = false;
+
+            that.time.addEvent({
+                delay: 1000,
+                callback: function() {
+                    cursors.left.enabled = true;
+                    cursors.right.enabled = true;
+                }
+            });
+
             // Explode the player
             player.anims.play('shipExplode');
             player.on('animationcomplete', function() {
@@ -443,18 +457,6 @@ class GameScene extends Phaser.Scene {
             finalScore.setVisible(true);
             finalScoreLabel.setVisible(true);
             gameOverRestart.setVisible(true);
-
-            // Disable the input for X seconds to prevent immediate restart
-            cursors.left.enabled = false;
-            cursors.right.enabled = false;
-
-            that.time.addEvent({
-                delay: 1000,
-                callback: function() {
-                    cursors.left.enabled = true;
-                    cursors.right.enabled = true;
-                }
-            });
 
             // Start the reset timer which - if reached - will return to the title screen
             resetTimer = that.time.addEvent({
@@ -515,6 +517,8 @@ class GameScene extends Phaser.Scene {
     */
     hitAsteroid (player, asteroid)
     {
+        cursors.left.enabled = false;
+        cursors.right.enabled = false;
         this.endGame(this);
     }
 }
