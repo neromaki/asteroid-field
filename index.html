@@ -32,7 +32,9 @@ let gameOver = false;
 let resetTimer;
 
 // UI
-let titleGameName, titleSubtext, titleInstructions, scoreDisplay, scoreLabel, gameOverText, finalScore, finalScoreLabel, gameOverRestart;
+let titleGameName, titleSubtext, titleInstructions;
+let inGameUI, scoreDisplay, scoreLabel;
+let gameOverUI, gameOverText, finalScore, finalScoreLabel, gameOverRestart, returnToTitleLabel, returnToTitleTimer;
 
 // Score
 let score = 0;
@@ -180,8 +182,7 @@ class GameScene extends Phaser.Scene {
                                         { 
                                             fontSize: '56px', 
                                             fill: '#fff'
-                                        }).setOrigin(0.5).setVisible(false);
-
+                                        }).setOrigin(0.5);
 
         finalScoreLabel = this.add.text(canvasWidth/2, 
                                         (canvasHeight/3) + 50, 
@@ -189,7 +190,7 @@ class GameScene extends Phaser.Scene {
                                         { 
                                             fontSize: '16px', 
                                             fill: '#fff'
-                                        }).setOrigin(0.5).setVisible(false);
+                                        }).setOrigin(0.5);
 
         finalScore = this.add.text(canvasWidth/2, 
                                         (canvasHeight/3) + 100, 
@@ -197,9 +198,7 @@ class GameScene extends Phaser.Scene {
                                         { 
                                             fontSize: '42px', 
                                             fill: '#fff'
-                                        }).setOrigin(0.5).setVisible(false);
-
-
+                                        }).setOrigin(0.5);
 
         gameOverRestart = this.add.text(canvasWidth/2, 
                                         (canvasHeight/3) * 2, 
@@ -207,11 +206,55 @@ class GameScene extends Phaser.Scene {
                                         { 
                                             fontSize: '24px', 
                                             fill: '#fff'
-                                        }).setOrigin(0.5).setVisible(false);
+                                        }).setOrigin(0.5);
 
+        returnToTitleLabel = this.add.text(canvasWidth/2 - 25, 
+                                        canvasHeight - 25, 
+                                        'Returning to title in:',
+                                        { 
+                                            fontSize: '12px', 
+                                            fill: '#fff'
+                                        }).setOrigin(0.5);
+
+        returnToTitleTimer = this.add.text(canvasWidth/2 + 75,
+                                        canvasHeight - 25,
+                                        '',
+                                        { 
+                                            fontSize: '14px', 
+                                            fill: '#fff'
+                                        }).setOrigin(0.5);
+
+        inGameUI = [
+            scoreLabel,
+            scoreDisplay
+        ];
+
+        gameOverUI = [
+            gameOverText,
+            finalScoreLabel,
+            finalScore,
+            gameOverRestart,
+            returnToTitleLabel,
+            returnToTitleTimer
+        ];
+            
         this.music = this.sound.add('gameMusic');
 
         this.startGame(this);
+    }
+
+    showInGameUI (showUI)
+    {
+        inGameUI.forEach(function(ui) {
+            ui.setVisible(showUI);
+        });
+    }
+
+    showGameOverUI (showUI)
+    {
+        gameOverUI.forEach(function(ui) {
+            ui.setVisible(showUI);
+        });
     }
 
 
@@ -220,6 +263,8 @@ class GameScene extends Phaser.Scene {
     */
     setupPlayer(that)
     {
+        console.log("GAME: setupPlayer()");
+
         // The player and its settings
         player = that.physics.add.sprite(400, 500, 'ship');
         player.angle = shipAngle;
@@ -296,22 +341,20 @@ class GameScene extends Phaser.Scene {
         score = 0;
 
         // Display the right UI
-        scoreDisplay.setVisible(true);
-        scoreLabel.setVisible(true);
-
-        gameOverText.setVisible(false);
-        finalScore.setVisible(false);
-        finalScoreLabel.setVisible(false);
-        gameOverRestart.setVisible(false);
+        this.showGameOverUI(false);
+        this.showInGameUI(true);
     }
 
 
     update ()
     {
+        console.log("GAME: update()");
         // If the game is over, test whether the player is pressing either L or R
         // if so, start the game again
         if (gameOver)
         {
+            returnToTitleTimer.setText(Math.ceil(((idleTimeToReset/1000) - (resetTimer.getElapsed()/1000))) + 's');
+
             if (resetTimer.getElapsed() > 1000 &&
             (cursors.left.getDuration() > 0 && cursors.left.getDuration() < 100
             || cursors.right.getDuration() > 0 && cursors.right.getDuration() < 100 )) {
@@ -451,13 +494,8 @@ class GameScene extends Phaser.Scene {
             this.destroyAllObjects();
 
             // Display the game over UI
-            scoreDisplay.setVisible(false);
-            scoreLabel.setVisible(false);
-
-            gameOverText.setVisible(true);
-            finalScore.setVisible(true);
-            finalScoreLabel.setVisible(true);
-            gameOverRestart.setVisible(true);
+            this.showInGameUI(false);
+            this.showGameOverUI(true);
 
             // Start the reset timer which - if reached - will return to the title screen
             resetTimer = that.time.addEvent({
