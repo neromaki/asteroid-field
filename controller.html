@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, user-scalable=no">
+        <title>Asteroid Field - Controller</title>
+        <link href="https://fonts.googleapis.com/css?family=Iceland|Libre+Barcode+39|Righteous&display=swap" rel="stylesheet">
+        <style type="text/css">
+
+            :root {
+                --white: #fdfdfd;
+                --black: #222222;
+
+                --yellow: #C0AD3D;
+                --orange: #B97B30;
+                --red: #B43423;
+
+                --blue-100: #BAD6EC;
+                --blue-200: #A0B7C8;
+                --blue-300: #3A6FA4;
+                --blue-400: #335A80;
+                --blue-500: #12304F;
+
+                --grey-100: #798691;
+                --grey-200: #55718A;
+
+                --button-depth: 10px;
+            }
+
+            html {
+                min-height: 100%;
+            }
+
+            body {
+                margin: 0;
+                background: var(--white);
+                height: 100%;
+                overflow: hidden;
+            }
+
+            .controller {
+                background: var(--blue-400);
+                border-radius: 15px;
+                height: 100%;
+                margin: 10px 15px;
+                padding: 5px;
+                box-shadow: 0 25px 0 0 var(--blue-500);
+            }
+
+            .controller__header {
+                text-align: center;
+            }
+
+            h1 {
+                color: #BAC2CA;
+                text-align: center;
+                font-size: 1.25em;
+                font-family: 'Righteous', cursive;
+                position: relative;
+                display: inline-block;
+            }
+
+            h1:before,
+            h1:after {
+                content: '';
+                height: 2px;
+                width: 50%;
+                background: var(--white);
+                opacity: .15;
+                position: absolute;
+                top: 50%;
+                left: -55%;
+            }
+
+            h1:after {
+                left: initial;
+                right: -55%;
+            }
+
+            h2 {
+                color: #BAC2CA;
+                text-align: center;
+                font-size: .6em;
+                font-family: 'Righteous', cursive;
+                margin: -5px 0;
+            }
+
+            .controls {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                height: 100%;
+                border-radius: 10px;
+                padding: 20px 15px;
+            }
+
+            .control {
+                flex-basis: 40%;
+                height: 100%;
+                padding: 35px 25px;
+                background: var(--blue-200);
+                border-radius: 10px;
+                box-shadow: 0 var(--button-depth) 0 0 var(--blue-500);
+            }
+
+            .control.active {
+                box-shadow: 0 1px 0 0 var(--blue-500);
+                position: relative;
+                top: calc(var(--button-depth) - 1px);
+            }
+
+            .control svg {
+                max-width: 150px;
+                display: block;
+                margin: 0 auto;
+            }
+
+            .control svg * {
+                fill: var(--white);
+            }
+
+            .control--left svg {
+                transform: scaleX(-1);
+                filter: FlipH;
+            }
+
+            .controller__footer {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+            }
+            
+            .label {
+                margin: 5px 0 15px 15px;
+                font-size: .75em;
+                opacity: .5;
+                color: var(--white);
+                font-family: 'Iceland';
+            }
+
+            .barcode {
+                font-family: 'Libre Barcode 39', cursive;
+                font-size: 2em;
+                text-align: right;
+                color: var(--white);
+                margin: 5px 15px 0;
+                opacity: .3;
+            }
+        </style>
+    </head>
+
+    <body>
+
+        <div class="controller">
+            <div class="controller__header">
+                <h1>ASTEROID FIELD 3001</h1>
+                <h2>COMPUTER GAME INPUT SYSTEM</h2>
+            </div>
+            <div class="controls">
+                <div class="control control--left">
+                    <svg viewBox="0 0 812 648" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M808.486 331.856C812.886 327.543 812.886 320.458 808.486 316.145L490.2 4.14816C483.239 -2.67508 471.5 2.25607 471.5 12.0036V156.5H29.5C13.4834 156.5 0.5 169.484 0.5 185.5V462.5C0.5 478.516 13.4834 491.5 29.5 491.5H471.5V635.997C471.5 645.744 483.239 650.675 490.2 643.852L808.486 331.856Z" fill="#C4C4C4"/>
+                    </svg>
+                </div>
+                <div class="control control--right">
+                    <svg viewBox="0 0 812 648" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M808.486 331.856C812.886 327.543 812.886 320.458 808.486 316.145L490.2 4.14816C483.239 -2.67508 471.5 2.25607 471.5 12.0036V156.5H29.5C13.4834 156.5 0.5 169.484 0.5 185.5V462.5C0.5 478.516 13.4834 491.5 29.5 491.5H471.5V635.997C471.5 645.744 483.239 650.675 490.2 643.852L808.486 331.856Z" fill="#C4C4C4"/>
+                    </svg>
+                </div>
+            </div>
+
+            <div class="controller__footer">
+                <p class="label">One Giant Leap game jam</p>
+                <p class="barcode">NOMAKI</p>
+            </div>
+        </div>
+
+        <script>
+            let controls = document.querySelectorAll('.control');
+
+            controls.forEach(function(control) {
+                
+                control.addEventListener('touchstart', function() {
+                    this.classList.add("active");
+                    window.navigator.vibrate(100);
+                });
+
+                control.addEventListener('touchend', function() {
+                    this.classList.remove("active");
+                });
+
+            });
+
+            window.oncontextmenu = function(event) {
+                event.preventDefault();
+                event.stopPropagation();
+                return false;
+            };
+        </script>
+    </body>
+</html>
