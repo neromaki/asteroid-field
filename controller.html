@@ -37,13 +37,14 @@
                 background: var(--white);
                 height: 100%;
                 overflow: hidden;
+                user-select: none;
             }
 
             .controller {
                 background: var(--blue-400);
                 border-radius: 15px;
                 height: 100%;
-                margin: 10px 15px;
+                margin: 5px;
                 padding: 5px;
                 box-shadow: 0 25px 0 0 var(--blue-500);
             }
@@ -146,6 +147,25 @@
                 color: var(--white);
                 margin: 5px 15px 0;
                 opacity: .3;
+            }
+
+
+            /* Portrait fixes */
+            @media (orientation: portrait) {
+                h1:before {
+                    width: 15%;
+                    left: -40px;
+                }
+                
+                h1:after {
+                    width: 15%;
+                    right: -40px;
+                }
+
+                .control {
+                    flex-basis: 32%;
+                    padding: 60% 25px;
+                }
             }
         </style>
     </head>
