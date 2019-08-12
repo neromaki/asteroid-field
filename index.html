@@ -243,10 +243,12 @@ class GameScene extends Phaser.Scene {
         
         // Score UI 
         scoreLabel = this.add.text(32, 22, 'Score:', { fontSize: '18px', fill: '#fff' });
-        scoreLabel.depth = 10;
 
         // The actual score to display
         scoreDisplay = this.add.text(110, 16, '', { fontSize: '32px', fill: '#fff', align: 'left' });
+
+        scoreLabel.depth = 10;
+        scoreDisplay.depth = 10;
         
 
         // Game Over screen UI elements
@@ -297,6 +299,14 @@ class GameScene extends Phaser.Scene {
                                             fontSize: '14px', 
                                             fill: '#fff'
                                         }).setOrigin(0.5);
+
+        // Render the UI above the stars and asteroids
+        gameOverText.depth = 10;
+        finalScoreLabel.depth = 10;
+        finalScore.depth = 10;
+        gameOverRestart.depth = 10;
+        returnToTitleLabel.depth = 10;
+        returnToTitleTimer.depth = 10;
 
         // Group in-game UI together
         inGameUI = [
@@ -526,6 +536,7 @@ class GameScene extends Phaser.Scene {
                 callback: function() {
                     cursors.left.enabled = true;
                     cursors.right.enabled = true;
+                    destroyAllGameObjects();
                 }
             });
 
@@ -569,29 +580,6 @@ class GameScene extends Phaser.Scene {
         this.endGame(this);
     }
 }
-
-
-// Phaser config
-let config = {
-    type: Phaser.AUTO,
-    width: canvasWidth,
-    height: canvasHeight,
-    physics: {
-        default: 'arcade',
-        arcade: {
-            debug: false,
-            debugShowBody: true,
-            debugBodyColor: 0x00ff00,
-        }
-    },
-    audio: {
-        disableWebAudio: true
-    },
-    scene: [
-        TitleScene,
-        GameScene,
-    ]
-};
 
 
 
@@ -675,8 +663,29 @@ function destroyAllGameObjects ()
     gameObjects = [];
 }
 
+
+
 // Lets get this party started!
-let game = new Phaser.Game(config);
+let game = new Phaser.Game({
+    type: Phaser.AUTO,
+    width: canvasWidth,
+    height: canvasHeight,
+    physics: {
+        default: 'arcade',
+        arcade: {
+            debug: false,
+            debugShowBody: true,
+            debugBodyColor: 0x00ff00,
+        }
+    },
+    audio: {
+        disableWebAudio: true
+    },
+    scene: [
+        TitleScene,
+        GameScene,
+    ]
+});
 
 </script>
 
