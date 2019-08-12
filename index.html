@@ -14,12 +14,6 @@
 <body>
 
 <script type="text/javascript">
-/**
-*   TODO:
-*   Transitioning from TITLE to GAME a second time causes startGame() to be called twice?!
-*   Spawned ASTEROIDS and STARS don't have a Y value??
-*/
-
 // Game utilities;
 let cursors;
 let canvasWidth = 1280;
@@ -53,6 +47,9 @@ let idleTimeToReset = 15000;
 
 /**
 *   The title screen
+*   
+*   Displays the game name, credits and instructions]
+*   Plays menu music, spawns decorative asteroids and stars
 */
 class TitleScene extends Phaser.Scene {
 
@@ -65,6 +62,7 @@ class TitleScene extends Phaser.Scene {
         this.music;
     }
 
+
     preload ()
     {
         // SPRITES
@@ -75,28 +73,32 @@ class TitleScene extends Phaser.Scene {
         this.load.audio('titleMusic', 'assets/audio/snd_music_molten_alloy.mp3');
     }
 
+
     create ()
     {
-        console.log("SCENE: Title");
-        //this.input.keyboard.enabled = true;
+        // Makes sure the state is properly set if we're returning from the Game to the Title
         gameOver = false;
 
+        // If we've come back from the Game via the reset timeout timer, clean up by destroying it
         if(resetTimer) {
             resetTimer.destroy();
         }
 
-        // Input Events
+        // Create input events to detect when a user presses anything
         cursors = this.input.keyboard.createCursorKeys();
 
+        // Add a short delay to creating the text in order for the Google Fonts to load first
         this.time.addEvent({
             delay: 250,
             callback: this.setupTitleText,
             callbackScope: this
         });
 
+        // Start the menu music
         this.music = this.sound.add('titleMusic');
         this.music.play({loop: true});
 
+        // Create physics groups for the decorative stars and asteroids
         stars = this.physics.add.group({key: 'star'});
         asteroids = this.physics.add.group({key: 'asteroid'});
 
@@ -108,7 +110,7 @@ class TitleScene extends Phaser.Scene {
             loop: true
         });
 
-        // Start spawning asteroids
+        // Start spawning background asteroids
         asteroidSpawner = this.time.addEvent({
             delay: 750,
             callback: spawnAsteroids,
@@ -117,9 +119,13 @@ class TitleScene extends Phaser.Scene {
         });
     }
 
+
+    /**
+     *  setupTitleText
+     *  Creates and renders the various bits of text on the Title screen
+     */
     setupTitleText ()
     {
-        // Create UI elements
         titleGameName = this.add.text(canvasWidth/2, 
                                         canvasHeight/3, 
                                         'Asteroid Field 3001', 
@@ -157,17 +163,18 @@ class TitleScene extends Phaser.Scene {
                                             fill: '#fff'
                                         });
 
+        // Ensure the UI elements are drawn above the asteroids and stars
         titleGameName.depth = 10;
         titleSubtext.depth = 10;
         titleInstructions.depth = 10;
         titleCredit.depth = 10;
 
-
-        // Flashing instructions
+        // Hide the instructions to begin with
         setTimeout(function() {
             titleInstructions.setVisible(false);
         }, 750);
         
+        // Start flashing the instructions
         this.time.addEvent({
             delay: 1500,
             callback: function() {
@@ -181,8 +188,10 @@ class TitleScene extends Phaser.Scene {
         });
     }
 
+
     update ()
     {
+        // Check for user input, and start the game if so
         if (cursors.left.isDown || cursors.right.isDown) {
             this.music.stop();
             this.scene.start('GameScene');
@@ -192,6 +201,10 @@ class TitleScene extends Phaser.Scene {
 
 
 
+/**
+ *  The actual game
+ *  Player must dodge asteroids
+ */
 class GameScene extends Phaser.Scene {
 
     constructor ()
@@ -202,6 +215,7 @@ class GameScene extends Phaser.Scene {
 
         this.music;
     }
+
 
     preload ()
     {
@@ -219,25 +233,23 @@ class GameScene extends Phaser.Scene {
     }
 
 
-    /*
-    * Setup UI elements and score
+    /**
+    * Setup the game logic, object spawns, UI elements and player
     */
     create ()
     {
-        console.log("SCENE: Game");
-
         // Input Events
         cursors = this.input.keyboard.createCursorKeys();
-        console.log(cursors);
-        //this.input.keyboard.enabled = true;
         
+        // Score UI 
         scoreLabel = this.add.text(32, 22, 'Score:', { fontSize: '18px', fill: '#fff' });
         scoreLabel.depth = 10;
 
+        // The actual score to display
         scoreDisplay = this.add.text(110, 16, '', { fontSize: '32px', fill: '#fff', align: 'left' });
         
 
-        // Create UI elements
+        // Game Over screen UI elements
         gameOverText = this.add.text(canvasWidth/2, 
                                         (canvasHeight/3)-50, 
                                         'GAME OVER', 
@@ -286,11 +298,13 @@ class GameScene extends Phaser.Scene {
                                             fill: '#fff'
                                         }).setOrigin(0.5);
 
+        // Group in-game UI together
         inGameUI = [
             scoreLabel,
             scoreDisplay
         ];
 
+        // Group game over UI together
         gameOverUI = [
             gameOverText,
             finalScoreLabel,
@@ -300,12 +314,18 @@ class GameScene extends Phaser.Scene {
             returnToTitleTimer
         ];
             
-        this.music = this.sound.add('gameMusic');
+        // Start the ship engine sound effect and the music
         this.shipEngine = this.sound.add('shipEngine');
+        this.music = this.sound.add('gameMusic');
 
+        // Kick start the actual game
         this.startGame(this);
     }
 
+
+    /**
+     *  Toggle the in-game UI
+     */
     showInGameUI (showUI)
     {
         inGameUI.forEach(function(ui) {
@@ -313,6 +333,10 @@ class GameScene extends Phaser.Scene {
         });
     }
 
+
+    /**
+    * Toggle the game over UI
+    */
     showGameOverUI (showUI)
     {
         gameOverUI.forEach(function(ui) {
@@ -322,22 +346,21 @@ class GameScene extends Phaser.Scene {
 
 
     /*
-    *   Create and set up the player sprite, animations etc
+    *   Create and set up the player sprite, animations and physics etc
     */
     setupPlayer(that)
     {
-        console.log("GAME: setupPlayer()");
-
-        // The player and its settings
+        // The player ship and its settings
         player = that.physics.add.sprite(canvasWidth / 2, canvasHeight - 100, 'ship');
-        player.angle = shipAngle;
-        player.scale = 0.75;
-        player.depth = 9;
-        player.setSize(50, 130, true);
-        player.body.setOffset(75, -30);
-        player.allowGravity = false;
-        player.setCollideWorldBounds(true);
+        player.angle = shipAngle;               // Point the ship upwards
+        player.scale = 0.75;                    // Make the sprite a bit smaller
+        player.depth = 9;                       // Render it above the asteroids and stars, but below UI
+        player.setSize(50, 130, true);          // Adjust the ship's collision box size
+        player.body.setOffset(75, -30);         // Adjust the ship's collision box offset
+        player.allowGravity = false;            // Prevent it from being affected by gravity
+        player.setCollideWorldBounds(true);     // Prevent the player from leaving the screen
 
+        // Create the default idle animation
         that.anims.create({
             key: 'shipDefault',
             frames: that.anims.generateFrameNumbers('ship', { start: 0, end: 1 }),
@@ -345,6 +368,7 @@ class GameScene extends Phaser.Scene {
             repeat: -1
         });
 
+        // Create the explosion animation for when the player whacks an asteroid
         that.anims.create({
             key: 'shipExplode',
             frames: that.anims.generateFrameNumbers('shipExplode', { start: 0, end: 16 }),
@@ -355,26 +379,28 @@ class GameScene extends Phaser.Scene {
 
 
     /*
-    * Setup the player, kick off the STAR and ASTEROID spawners
-    * and show the right UI elements
+    * Setup the player, kick off the STAR and ASTEROID spawners and show the right UI elements
     */
     startGame(that)
     {
-        console.log("GAME: startGame()");
-
+        // If restarting the game from the Game Over screen, remove the reset timer
         if(resetTimer) {
             resetTimer.destroy();
         }
 
+        // Reset any user input to prevent immediate starts
         cursors.left.reset();
         cursors.right.reset();
 
-        this.music.play({loop: true});
+        // Start the ship engine effect and game music
         this.shipEngine.play({loop: true});
+        this.music.play({loop: true});
         
+        // Create physics groups for the Stars and Asteroids
         stars = this.physics.add.group({key: 'star'});
         asteroids = this.physics.add.group({key: 'asteroid'});
 
+        // Setup the player ship
         this.setupPlayer(that);
 
         // Start spawning background stars
@@ -393,9 +419,10 @@ class GameScene extends Phaser.Scene {
             loop: true
         });
 
+        // Setup collision checks between the player and asteroids, calling hitAsteroid() if so
         this.physics.add.collider(player, asteroids, this.hitAsteroid, null, this);
 
-        // Increase the asteroid spawn rate every X seconds
+        // Increase the asteroid spawn rate every X milliseconds
         that.time.addEvent({
             delay: 10000,
             callback: this.adjustAsteroidSpawnRate,
@@ -403,6 +430,7 @@ class GameScene extends Phaser.Scene {
             loop: true
         });
 
+        // Clean up and destroy any offscreen game objects every Y milliseconds
         that.time.addEvent({
             delay: 1000,
             callback: this.destroyOffscreenGameObjects,
@@ -421,21 +449,21 @@ class GameScene extends Phaser.Scene {
 
     update ()
     {
-        console.log("GAME: update()");
         // If the game is over, test whether the player is pressing either L or R
         // if so, start the game again
         if (gameOver)
         {
+            // Display the time remaining before the game will return to the title screen in seconds
             returnToTitleTimer.setText(Math.ceil(((idleTimeToReset/1000) - (resetTimer.getElapsed()/1000))) + 's');
 
+            // Game can only restart after at least 1s has passed, and the user has pressed left or right SINCE the game finished
             if (resetTimer.getElapsed() > 1000 &&
             (cursors.left.getDuration() > 0 && cursors.left.getDuration() < 100
             || cursors.right.getDuration() > 0 && cursors.right.getDuration() < 100 )) {
-                console.log("GAME: Restarting");
-                gameOver = false;
-                this.music.stop();
-                this.shipEngine.stop();
-                this.startGame(this);
+                gameOver = false;       // Reset the gameover flag
+                this.shipEngine.stop(); // Stop the engine effect
+                this.music.stop();      // Stop the music
+                this.startGame(this);   // Restart the game
             }
             return false;
         }
@@ -469,8 +497,7 @@ class GameScene extends Phaser.Scene {
     }
 
 
-
-    /*
+    /**
     * Adjust the asteroid spawn rate by X each time, to a minimum of 100ms
     */
     adjustAsteroidSpawnRate()
@@ -481,19 +508,19 @@ class GameScene extends Phaser.Scene {
     }
 
 
-    /*
+    /**
     * End the game and display the GAME OVER screen with final score
     */
     endGame(that)
     {
         if(!gameOver) {
-            console.log("GAME: endGame()");
             gameOver = true;
 
             // Disable the input for X seconds to prevent immediate restart
             cursors.left.enabled = false;
             cursors.right.enabled = false;
 
+            // Wait 1s before re-enabling the user's input, to prevent immediate resets
             that.time.addEvent({
                 delay: 1000,
                 callback: function() {
@@ -507,14 +534,12 @@ class GameScene extends Phaser.Scene {
             player.on('animationcomplete', function() {
                 player.destroy();
             }, this);
+
             this.sound.play('shipExplosion');
 
             // Stop spawning stars and asteroids
             starSpawner.destroy();
             asteroidSpawner.destroy();
-
-            // Remove all star and asteroid game objects
-            //this.destroyAllGameObjects();
 
             // Display the game over UI
             this.showInGameUI(false);
@@ -524,7 +549,6 @@ class GameScene extends Phaser.Scene {
             resetTimer = that.time.addEvent({
                 delay: idleTimeToReset,
                 callback: function() {
-                    console.log("GAME: Returning to title");
                     this.music.stop();
                     this.scene.start('TitleScene');
                 },
@@ -567,53 +591,59 @@ let config = {
         TitleScene,
         GameScene,
     ]
-    //scene: {
-        // preload: preload,
-        // create: create,
-        // update: update
-    //}
 };
 
 
 
+/**
+ *  GLOBAL FUNCTIONS - Used by both Title and Game
+ */
 
-    /*
-    * Spawn stars to serve as background decoration
-    */
-    function spawnStars ()
-    {
-        let star = stars.create( Math.random() * (canvasWidth - 0) + 0, 0, 'star' );
+/*
+* Spawn stars to serve as background decoration
+*/
+function spawnStars ()
+{
+    // Spawn a star at the top of the screen at a random X coordinate
+    let star = stars.create( Math.random() * (canvasWidth - 0) + 0, 0, 'star' );
 
-        // Point it downwards and fling it
-        star.angle = 270;
-        star.depth = 1;
-        star.setVelocityY(750);
-        gameObjects.push(star);
-    }
+    // Point it downwards and fling it
+    star.angle = 270;
+    star.depth = 1;
+    star.setVelocityY(750);
+
+    // Add the star to the global gameObjects array
+    gameObjects.push(star);
+}
 
 
-    /*
-    * Spawn asteroids which the player must avoid
-    */
-    function spawnAsteroids ()
-    {
-        // Asteroid config
-        let scaleMin = 0.6;
-        let scaleMax = 1.1;
-        let velocityMin = 200;
-        let velocityMax = 600;
-        let rotationMin = 10;
-        let rotationMax = 500;
+/*
+* Spawn asteroids which the player must avoid
+*/
+function spawnAsteroids ()
+{
+    // Asteroid config
+    let scaleMin = 0.6;
+    let scaleMax = 1.1;
+    let velocityMin = 200;
+    let velocityMax = 600;
+    let rotationMin = 10;
+    let rotationMax = 500;
 
-        let asteroid = asteroids.create( Math.random() * (canvasWidth - 0) + 0, 0, 'asteroid' );
+    // Spawn an asteroid at the top of the screen at a random X coordinate
+    let asteroid = asteroids.create( Math.random() * (canvasWidth - 0) + 0, 0, 'asteroid' );
 
-        asteroid.depth = 2;
-        asteroid.scale = Math.random() * (scaleMax - scaleMin) + scaleMin;
-        asteroid.setVelocityY(Math.random() * (velocityMax - velocityMin) + velocityMin);
-        asteroid.setAngularVelocity(Math.random() * (rotationMax - rotationMin) + rotationMin);
+    // Randomise the asteroid's size, speed and rotation for more variety
+    asteroid.scale = Math.random() * (scaleMax - scaleMin) + scaleMin;
+    asteroid.setVelocityY(Math.random() * (velocityMax - velocityMin) + velocityMin);
+    asteroid.setAngularVelocity(Math.random() * (rotationMax - rotationMin) + rotationMin);
 
-        gameObjects.push(asteroid);
-    }
+    // Draw the asteroid above the stars
+    asteroid.depth = 2;
+
+    // Add the asteroid to the global gameObjects array 
+    gameObjects.push(asteroid);
+}
 
 
 /*
@@ -621,8 +651,11 @@ let config = {
 */
 function destroyOffscreenGameObjects ()
 {
+    // For each object in the global gameObjects array..
     for(var x = 0; x < gameObjects.length; x++) {
+        // If it is below the bottom of the canvas..
         if(gameObjects[x].y > canvasHeight) {
+            // Destroy it, and remove it from the array
             gameObjects[x].destroy();
             gameObjects.splice(x, 1);
         }
@@ -638,6 +671,7 @@ function destroyAllGameObjects ()
         gameObjects[x].destroy();
     }
 
+    // Reset the global array
     gameObjects = [];
 }
 
