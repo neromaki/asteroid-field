@@ -2,8 +2,9 @@
 <html lang="en"> 
 <head> 
     <meta charset="UTF-8" />
-    <title>Making your first Phaser 3 Game - Part 10</title>
+    <title>Asteroid Field</title>
     <script src="phaser.min.js"></script>
+    <script src="fontLoader.js"></script>
     <style type="text/css">
         body {
             margin: 0;
@@ -21,8 +22,8 @@
 
 // Game utilities;
 let cursors;
-let canvasWidth = 800;
-let canvasHeight = 600;
+let canvasWidth = 1280;
+let canvasHeight = 720;
 
 // Game objects
 let player, stars, asteroids, starSpawner, asteroidSpawner;
@@ -32,7 +33,7 @@ let gameOver = false;
 let resetTimer;
 
 // UI
-let titleGameName, titleSubtext, titleInstructions;
+let titleGameName, titleSubtext, titleInstructions, titleCredit;
 let inGameUI, scoreDisplay, scoreLabel;
 let gameOverUI, gameOverText, finalScore, finalScoreLabel, gameOverRestart, returnToTitleLabel, returnToTitleTimer;
 
@@ -40,13 +41,13 @@ let gameOverUI, gameOverText, finalScore, finalScoreLabel, gameOverRestart, retu
 let score = 0;
 
 // Game config
-let asteroidSpawnRate = 500;
+let asteroidSpawnRate = 400;
 
 let shipAngle = 270;
 let shipTurnAngle = 25;
-let shipSpeed = 350;
+let shipSpeed = 400;
 
-let idleTimeToReset = 5000;
+let idleTimeToReset = 10000;
 
 
 /**
@@ -86,18 +87,48 @@ class TitleScene extends Phaser.Scene {
         // Input Events
         cursors = this.input.keyboard.createCursorKeys();
 
+        this.time.addEvent({
+            delay: 250,
+            callback: this.setupTitleText,
+            callbackScope: this
+        });
+
+        this.music = this.sound.add('titleMusic');
+        this.music.play({loop: true});
+
+
+        // Start spawning background stars
+        starSpawner = this.time.addEvent({
+            delay: 150,
+            callback: this.spawnStars,
+            callbackScope: this,
+            loop: true
+        });
+
+        // Start spawning asteroids
+        asteroidSpawner = this.time.addEvent({
+            delay: 750,
+            callback: this.spawnAsteroids,
+            callbackScope: this,
+            loop: true
+        });
+    }
+
+    setupTitleText ()
+    {
         // Create UI elements
         titleGameName = this.add.text(canvasWidth/2, 
                                         canvasHeight/3, 
-                                        'Asteroid Field', 
+                                        'Asteroid Field 3001', 
                                         { 
+                                            fontFamily: "Righteous",
                                             fontSize: '56px', 
                                             fill: '#fff'
                                         }).setOrigin(0.5);
 
         titleSubtext = this.add.text(canvasWidth/2, 
                                         (canvasHeight/3) + 50, 
-                                        'a game for One Giant Leap',
+                                        'One Giant Leap game jam',
                                         { 
                                             fontSize: '16px', 
                                             fill: '#fff'
@@ -109,16 +140,40 @@ class TitleScene extends Phaser.Scene {
                                         (canvasHeight/3) * 2, 
                                         'press any button to start',
                                         { 
+                                            fontFamily: "Iceland",
                                             fontSize: '24px', 
                                             fill: '#fff'
                                         }).setOrigin(0.5);
 
+        titleCredit = this.add.text(50, 
+                                        canvasHeight - 50, 
+                                        'By Shaun Wall (@nomaki)',
+                                        { 
+                                            fontFamily: "Iceland",
+                                            fontSize: '18px', 
+                                            fill: '#fff'
+                                        });
+
         titleGameName.depth = 10;
         titleSubtext.depth = 10;
         titleInstructions.depth = 10;
+        titleCredit.depth = 10;
 
-        this.music = this.sound.add('titleMusic');
-        this.music.play({loop: true});
+        setTimeout(function() {
+            titleInstructions.setVisible(false);
+        }, 750);
+        
+        this.time.addEvent({
+            delay: 1500,
+            callback: function() {
+                titleInstructions.setVisible(true);
+                setTimeout(function() {
+                    titleInstructions.setVisible(false);
+                }, 750);
+            },
+            callbackScope: this,
+            loop: true
+        });
     }
 
     update ()
@@ -128,6 +183,52 @@ class TitleScene extends Phaser.Scene {
             this.scene.start('GameScene');
         }
     }
+
+    /*
+    * Spawn stars to serve as background decoration
+    */
+    spawnStars ()
+    {
+        // Add a new star to the physics group at a random X coordinate
+        stars = this.physics.add.group({
+            key: 'star',
+            setXY: { x: Math.random() * (canvasWidth - 0) + 0, y: 0 }
+        });
+
+        // Point it downwards and fling it
+        stars.children.iterate(function (star) {
+            star.angle = 270;
+            star.depth = 1;
+            star.setVelocityY(750);
+        });
+
+        // Destroy offscreen objects
+        //GameScene.destroyOffscreenObjects();
+    }
+
+    spawnAsteroids ()
+    {
+        // Asteroid config
+        let scaleMin = 0.6;
+        let scaleMax = 1.1;
+        let velocityMin = 200;
+        let velocityMax = 600;
+        let rotationMin = 10;
+        let rotationMax = 500;
+
+        asteroids = this.physics.add.group({
+            key: 'asteroid',
+            setXY: { x: Math.random() * (canvasWidth - 0) + 0, y: 0 }
+        });
+
+        asteroids.children.iterate(function (asteroid) {
+            asteroid.depth = 2;
+            asteroid.scale = Math.random() * (scaleMax - scaleMin) + scaleMin;
+            asteroid.setVelocityY(Math.random() * (velocityMax - velocityMin) + velocityMin);
+            asteroid.setAngularVelocity(Math.random() * (rotationMax - rotationMin) + rotationMin);
+        });
+    }
+    
 }
 
 
@@ -174,6 +275,7 @@ class GameScene extends Phaser.Scene {
         scoreLabel.depth = 10;
 
         scoreDisplay = this.add.text(110, 16, '', { fontSize: '32px', fill: '#fff', align: 'left' });
+        
 
         // Create UI elements
         gameOverText = this.add.text(canvasWidth/2, 
@@ -266,7 +368,7 @@ class GameScene extends Phaser.Scene {
         console.log("GAME: setupPlayer()");
 
         // The player and its settings
-        player = that.physics.add.sprite(400, 500, 'ship');
+        player = that.physics.add.sprite(canvasWidth / 2, canvasHeight - 150, 'ship');
         player.angle = shipAngle;
         player.scale = 0.75;
         player.depth = 9;
@@ -315,7 +417,7 @@ class GameScene extends Phaser.Scene {
 
         // Start spawning background stars
         starSpawner = that.time.addEvent({
-            delay: 250,
+            delay: 200,
             callback: this.spawnStars,
             callbackScope: that,
             loop: true
@@ -424,10 +526,10 @@ class GameScene extends Phaser.Scene {
     spawnAsteroids ()
     {
         // Asteroid config
-        let scaleMin = 0.5;
-        let scaleMax = 1;
+        let scaleMin = 0.6;
+        let scaleMax = 1.1;
         let velocityMin = 200;
-        let velocityMax = 500;
+        let velocityMax = 600;
         let rotationMin = 10;
         let rotationMax = 500;
 
@@ -453,7 +555,7 @@ class GameScene extends Phaser.Scene {
     adjustAsteroidSpawnRate()
     {
         if (asteroidSpawner.delay > 100) {
-            asteroidSpawner.delay = asteroidSpawner.delay - 75;
+            asteroidSpawner.delay = asteroidSpawner.delay - 50;
         }
     }
 
@@ -556,6 +658,7 @@ class GameScene extends Phaser.Scene {
     */
     hitAsteroid (player, asteroid)
     {
+        console.log("GAME: hitAsteroid()");
         cursors.left.enabled = false;
         cursors.right.enabled = false;
         this.endGame(this);
@@ -571,7 +674,7 @@ let config = {
     physics: {
         default: 'arcade',
         arcade: {
-            debug: true,
+            debug: false,
             debugShowBody: true,
             debugBodyColor: 0x00ff00,
         }
