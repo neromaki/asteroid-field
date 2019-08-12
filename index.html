@@ -27,6 +27,7 @@ let canvasHeight = 720;
 
 // Game objects
 let player, stars, asteroids, starSpawner, asteroidSpawner;
+let gameObjects = [];
 
 // States
 let gameOver = false;
@@ -47,7 +48,7 @@ let shipAngle = 270;
 let shipTurnAngle = 25;
 let shipSpeed = 400;
 
-let idleTimeToReset = 10000;
+let idleTimeToReset = 15000;
 
 
 /**
@@ -96,11 +97,13 @@ class TitleScene extends Phaser.Scene {
         this.music = this.sound.add('titleMusic');
         this.music.play({loop: true});
 
+        stars = this.physics.add.group({key: 'star'});
+        asteroids = this.physics.add.group({key: 'asteroid'});
 
         // Start spawning background stars
         starSpawner = this.time.addEvent({
             delay: 150,
-            callback: this.spawnStars,
+            callback: spawnStars,
             callbackScope: this,
             loop: true
         });
@@ -108,7 +111,7 @@ class TitleScene extends Phaser.Scene {
         // Start spawning asteroids
         asteroidSpawner = this.time.addEvent({
             delay: 750,
-            callback: this.spawnAsteroids,
+            callback: spawnAsteroids,
             callbackScope: this,
             loop: true
         });
@@ -159,6 +162,8 @@ class TitleScene extends Phaser.Scene {
         titleInstructions.depth = 10;
         titleCredit.depth = 10;
 
+
+        // Flashing instructions
         setTimeout(function() {
             titleInstructions.setVisible(false);
         }, 750);
@@ -183,53 +188,8 @@ class TitleScene extends Phaser.Scene {
             this.scene.start('GameScene');
         }
     }
-
-    /*
-    * Spawn stars to serve as background decoration
-    */
-    spawnStars ()
-    {
-        // Add a new star to the physics group at a random X coordinate
-        stars = this.physics.add.group({
-            key: 'star',
-            setXY: { x: Math.random() * (canvasWidth - 0) + 0, y: 0 }
-        });
-
-        // Point it downwards and fling it
-        stars.children.iterate(function (star) {
-            star.angle = 270;
-            star.depth = 1;
-            star.setVelocityY(750);
-        });
-
-        // Destroy offscreen objects
-        //GameScene.destroyOffscreenObjects();
-    }
-
-    spawnAsteroids ()
-    {
-        // Asteroid config
-        let scaleMin = 0.6;
-        let scaleMax = 1.1;
-        let velocityMin = 200;
-        let velocityMax = 600;
-        let rotationMin = 10;
-        let rotationMax = 500;
-
-        asteroids = this.physics.add.group({
-            key: 'asteroid',
-            setXY: { x: Math.random() * (canvasWidth - 0) + 0, y: 0 }
-        });
-
-        asteroids.children.iterate(function (asteroid) {
-            asteroid.depth = 2;
-            asteroid.scale = Math.random() * (scaleMax - scaleMin) + scaleMin;
-            asteroid.setVelocityY(Math.random() * (velocityMax - velocityMin) + velocityMin);
-            asteroid.setAngularVelocity(Math.random() * (rotationMax - rotationMin) + rotationMin);
-        });
-    }
-    
 }
+
 
 
 class GameScene extends Phaser.Scene {
@@ -412,15 +372,15 @@ class GameScene extends Phaser.Scene {
         this.music.play({loop: true});
         this.shipEngine.play({loop: true});
         
-        stars = that.physics.add.group();
-        asteroids = that.physics.add.group();
+        stars = this.physics.add.group({key: 'star'});
+        asteroids = this.physics.add.group({key: 'asteroid'});
 
         this.setupPlayer(that);
 
         // Start spawning background stars
         starSpawner = that.time.addEvent({
             delay: 200,
-            callback: this.spawnStars,
+            callback: spawnStars,
             callbackScope: that,
             loop: true
         });
@@ -428,15 +388,24 @@ class GameScene extends Phaser.Scene {
         // Start spawning asteroids
         asteroidSpawner = that.time.addEvent({
             delay: asteroidSpawnRate,
-            callback: this.spawnAsteroids,
+            callback: spawnAsteroids,
             callbackScope: that,
             loop: true
         });
+
+        this.physics.add.collider(player, asteroids, this.hitAsteroid, null, this);
 
         // Increase the asteroid spawn rate every X seconds
         that.time.addEvent({
             delay: 10000,
             callback: this.adjustAsteroidSpawnRate,
+            callbackScope: that,
+            loop: true
+        });
+
+        that.time.addEvent({
+            delay: 1000,
+            callback: this.destroyOffscreenGameObjects,
             callbackScope: that,
             loop: true
         });
@@ -500,57 +469,6 @@ class GameScene extends Phaser.Scene {
     }
 
 
-    /*
-    * Spawn stars to serve as background decoration
-    */
-    spawnStars ()
-    {
-        // Add a new star to the physics group at a random X coordinate
-        stars = this.physics.add.group({
-            key: 'star',
-            setXY: { x: Math.random() * (canvasWidth - 0) + 0, y: 0 }
-        });
-
-        // Point it downwards and fling it
-        stars.children.iterate(function (star) {
-            star.angle = 270;
-            star.depth = 1;
-            star.setVelocityY(750);
-        });
-
-        // Destroy offscreen objects
-        this.destroyOffscreenObjects();
-    }
-
-
-    /*
-    * Spawn asteroids which the player must avoid
-    */
-    spawnAsteroids ()
-    {
-        // Asteroid config
-        let scaleMin = 0.6;
-        let scaleMax = 1.1;
-        let velocityMin = 200;
-        let velocityMax = 600;
-        let rotationMin = 10;
-        let rotationMax = 500;
-
-        asteroids = this.physics.add.group({
-            key: 'asteroid',
-            setXY: { x: Math.random() * (canvasWidth - 0) + 0, y: 0 }
-        });
-
-        asteroids.children.iterate(function (asteroid) {
-            asteroid.depth = 2;
-            asteroid.scale = Math.random() * (scaleMax - scaleMin) + scaleMin;
-            asteroid.setVelocityY(Math.random() * (velocityMax - velocityMin) + velocityMin);
-            asteroid.setAngularVelocity(Math.random() * (rotationMax - rotationMin) + rotationMin);
-        });
-
-        this.physics.add.collider(player, asteroids, this.hitAsteroid, null, this);
-    }
-
 
     /*
     * Adjust the asteroid spawn rate by X each time, to a minimum of 100ms
@@ -596,7 +514,7 @@ class GameScene extends Phaser.Scene {
             asteroidSpawner.destroy();
 
             // Remove all star and asteroid game objects
-            this.destroyAllObjects();
+            //this.destroyAllGameObjects();
 
             // Display the game over UI
             this.showInGameUI(false);
@@ -613,46 +531,6 @@ class GameScene extends Phaser.Scene {
                 callbackScope: that
             });
         }
-    }
-
-
-    /*
-    * Destroy any stars or asteroids which are off-screen
-    */
-    destroyOffscreenObjects ()
-    {
-        // Destroy off-screen stars
-        stars.children.iterate(function (star) {
-            if(star.y > canvasHeight) {
-                star.destroy();
-                console.log("DESTROYING STAR");
-            }
-        });
-
-        // Destroy off-screen asteroids
-        asteroids.children.iterate(function (asteroid) {
-            if(asteroid.y > canvasHeight) {
-                asteroid.destroy();
-                console.log("DESTROYING ASTEROID");
-            }
-        });
-    }
-
-
-    /*
-    * Destroy all stars or asteroids
-    */
-    destroyAllObjects ()
-    {
-        console.log("GAME: Destroying all STARS");
-        stars.children.iterate(function (star) {
-            star.destroy();
-        });
-
-        console.log("GAME: Destroying all ASTEROIDS");
-        asteroids.children.iterate(function (asteroid) {
-            asteroid.destroy();
-        });
     }
 
 
@@ -695,6 +573,73 @@ let config = {
         // update: update
     //}
 };
+
+
+
+
+    /*
+    * Spawn stars to serve as background decoration
+    */
+    function spawnStars ()
+    {
+        let star = stars.create( Math.random() * (canvasWidth - 0) + 0, 0, 'star' );
+
+        // Point it downwards and fling it
+        star.angle = 270;
+        star.depth = 1;
+        star.setVelocityY(750);
+        gameObjects.push(star);
+    }
+
+
+    /*
+    * Spawn asteroids which the player must avoid
+    */
+    function spawnAsteroids ()
+    {
+        // Asteroid config
+        let scaleMin = 0.6;
+        let scaleMax = 1.1;
+        let velocityMin = 200;
+        let velocityMax = 600;
+        let rotationMin = 10;
+        let rotationMax = 500;
+
+        let asteroid = asteroids.create( Math.random() * (canvasWidth - 0) + 0, 0, 'asteroid' );
+
+        asteroid.depth = 2;
+        asteroid.scale = Math.random() * (scaleMax - scaleMin) + scaleMin;
+        asteroid.setVelocityY(Math.random() * (velocityMax - velocityMin) + velocityMin);
+        asteroid.setAngularVelocity(Math.random() * (rotationMax - rotationMin) + rotationMin);
+
+        gameObjects.push(asteroid);
+    }
+
+
+/*
+* Destroy any stars or asteroids which are off-screen
+*/
+function destroyOffscreenGameObjects ()
+{
+    for(var x = 0; x < gameObjects.length; x++) {
+        if(gameObjects[x].y > canvasHeight) {
+            gameObjects[x].destroy();
+            gameObjects.splice(x, 1);
+        }
+    }
+}
+
+/*
+* Destroy all stars or asteroids
+*/
+function destroyAllGameObjects ()
+{
+    for(var x = 0; x < gameObjects.length; x++) {
+        gameObjects[x].destroy();
+    }
+
+    gameObjects = [];
+}
 
 // Lets get this party started!
 let game = new Phaser.Game(config);
