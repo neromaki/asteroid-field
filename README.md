@@ -6,6 +6,8 @@ Made in [PhaserJS](https://phaser.io/) for [One Giant Leap game jam](https://one
 
 Game is in `index.html`, accompanying mobile controller in `controller.html`.
 
+[Play the game in your browser](https://neromaki.github.io/asteroid-field)
+
 
 ## CREDITS
 * Music: [Purple Planet](https://www.purple-planet.com)
